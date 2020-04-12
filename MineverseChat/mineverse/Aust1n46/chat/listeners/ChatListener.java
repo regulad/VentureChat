@@ -1,7 +1,5 @@
 package mineverse.Aust1n46.chat.listeners;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Set;
@@ -507,32 +505,8 @@ public class ChatListener implements Listener {
 			return;
 		}
 		else {
-			ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-			DataOutputStream out = new DataOutputStream(byteOutStream);
-			try {
-				out.writeUTF("Chat");
-				out.writeUTF(channel.getName());
-				out.writeUTF(mcp.getName());
-				out.writeUTF(mcp.getUUID().toString());
-				out.writeBoolean(mcp.getBungeeToggle());
-				out.writeInt(hash);
-				out.writeUTF(format);
-				out.writeUTF(chat);
-				if(plugin.getConfig().getString("loglevel", "info").equals("debug")) {
-					System.out.println(out.size() + " size bytes without json");
-				}
-				out.writeUTF(globalJSON);
-				if(plugin.getConfig().getString("loglevel", "info").equals("debug")) {
-					System.out.println(out.size() + " bytes size with json");
-				}
-				out.writeUTF(MineverseChat.permission.getPrimaryGroup(mcp.getPlayer()));
-				out.writeUTF(mcp.getNickname());
-				mcp.getPlayer().sendPluginMessage(plugin, MineverseChat.PLUGIN_MESSAGING_CHANNEL, byteOutStream.toByteArray());
-				out.close();
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-			}
+			byte[] pluginMessage = Format.createPluginMessage("Chat", channel.getName(), mcp.getName(), mcp.getUUID().toString(), mcp.getUUID().toString(), String.valueOf(mcp.getBungeeToggle()), String.valueOf(hash), format, chat, globalJSON, MineverseChat.permission.getPrimaryGroup(mcp.getPlayer()), mcp.getNickname());
+			mcp.getPlayer().sendPluginMessage(plugin, MineverseChat.PLUGIN_MESSAGING_CHANNEL, pluginMessage);
 			return;
 		}
 	}

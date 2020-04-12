@@ -1,5 +1,7 @@
 package mineverse.Aust1n46.chat.utilities;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -477,5 +479,21 @@ public class Format {
 	
 	public static String escapeAllRegex(String input) {
 		return input.replace("[", "\\[").replace("]", "\\]").replace("{", "\\{").replace("}", "\\}").replace("(", "\\(").replace(")", "\\)").replace("|", "\\|").replace("+", "\\+").replace("*", "\\*");
+	}
+	
+	public static byte[] createPluginMessage(String header, String ...args) {
+		ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+		DataOutputStream out = new DataOutputStream(byteOutStream);
+		try {
+			out.writeUTF(header);
+			for(String arg : args) {
+				out.writeUTF(arg);
+			}
+			out.close();
+		} 
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return byteOutStream.toByteArray();
 	}
 }
