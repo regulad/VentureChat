@@ -36,6 +36,12 @@ filters:
 - ((\d+\.){3}\d+),another dimension
 
 # command without the /
+# Only commands from VentureChat can be disabled here!
+# Restart server after changing this section!!!
+disabled_commands:
+- mute
+
+# command without the /
 blockablecommands:
 - vote
 - me

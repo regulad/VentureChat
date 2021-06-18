@@ -1,12 +1,22 @@
 package mineverse.Aust1n46.chat.command;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.plugin.Plugin;
 
 import mineverse.Aust1n46.chat.MineverseChat;
 import mineverse.Aust1n46.chat.command.chat.Broadcast;
@@ -38,8 +48,8 @@ import mineverse.Aust1n46.chat.command.chat.Setchannel;
 import mineverse.Aust1n46.chat.command.chat.Setchannelall;
 import mineverse.Aust1n46.chat.command.chat.VentureChatGui;
 import mineverse.Aust1n46.chat.command.chat.Venturechat;
-import mineverse.Aust1n46.chat.command.message.IgnoreCommandExecutor;
-import mineverse.Aust1n46.chat.command.message.MessageCommandExecutor;
+import mineverse.Aust1n46.chat.command.message.Ignore;
+import mineverse.Aust1n46.chat.command.message.Message;
 import mineverse.Aust1n46.chat.command.message.MessageToggle;
 import mineverse.Aust1n46.chat.command.message.Notifications;
 import mineverse.Aust1n46.chat.command.message.Reply;
@@ -56,9 +66,17 @@ public class VentureCommandExecutor implements TabExecutor {
 	private static Map<String, VentureCommand> commands = new HashMap<String, VentureCommand>();
 	private static MineverseChat plugin = MineverseChat.getInstance();
 	private static VentureCommandExecutor commandExecutor;
+	
+	private static final List<String> EXCLUDED_COMMANDS = Collections.unmodifiableList(Arrays.asList("ch", "r", "venturechat"));
+	
+	private static Field commandMapField;
+	private static CommandMap commandMap;
+	private static Field knownCommands;
+	private static Constructor<PluginCommand> pluginCommand;
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] parameters) {
+		System.out.println(command.getName());
 		commands.get(command.getName()).execute(sender, command.getName(), parameters);
 		return true;
 	}
@@ -68,11 +86,41 @@ public class VentureCommandExecutor implements TabExecutor {
 		return commands.get(command.getName()).onTabComplete(sender, command, label, args);
 	}
 	
+	private static void loadCommandMap() {
+		try {
+			commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+			commandMapField.setAccessible(true);
+			commandMap = (CommandMap) commandMapField.get(Bukkit.getServer());
+			knownCommands = SimpleCommandMap.class.getDeclaredField("knownCommands");
+			knownCommands.setAccessible(true);
+			pluginCommand = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
+			pluginCommand.setAccessible(true);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void register(String commandName, CommandExecutor commandExecutor) {
+		try {
+			PluginCommand command = (PluginCommand) pluginCommand.newInstance(commandName, plugin);
+			command.setExecutor(commandExecutor);
+			commandMap.register(plugin.getName(), command);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void initialize() {
+		loadCommandMap();
+		List<String> disabledCommands = plugin.getConfig().getStringList("disabled_commands");
 		commandExecutor = new VentureCommandExecutor();
 		commands.put("broadcast", new Broadcast());
-		commands.put("channel", new Channel());
-		commands.put("join", new Channel());
+		VentureCommand channel = new Channel();
+		commands.put("ch", channel);
+		commands.put("channel", channel);
+		commands.put("join", channel);
 		commands.put("channelinfo", new Channelinfo());
 		commands.put("chatinfo", new Chatinfo());
 		commands.put("chatreload", new Chatreload());
@@ -93,42 +141,49 @@ public class VentureCommandExecutor implements TabExecutor {
 		commands.put("me", new Me());
 		commands.put("venturechat", new Venturechat());
 		commands.put("setnickname", new Nick());
-		commands.put("notifications", new Notifications());
+		commands.put("notify", new Notifications());
 		commands.put("party", new Party());
 		commands.put("rangedspy", new RangedSpy());
 		commands.put("removemessage", new Removemessage());
 		commands.put("setchannel", new Setchannel());
 		commands.put("setchannelall", new Setchannelall());
 		commands.put("spy", new Spy());
-		commands.put("venturechatgui", new VentureChatGui());
+		VentureCommand ventureChatGui = new VentureChatGui();
+		commands.put("venturechatgui", ventureChatGui);
+		commands.put("vchatgui", ventureChatGui);
 		commands.put("messagetoggle", new MessageToggle());
 		commands.put("bungeetoggle", new BungeeToggle());
+		VentureCommand reply = new Reply();
+		commands.put("reply", reply);
+		commands.put("r", reply);
+		commands.put("mute", new Mute());
+		commands.put("muteall", new Muteall());
+		commands.put("unmute", new Unmute());
+		commands.put("unmuteall", new Unmuteall());
+		VentureCommand message = new Message();
+		commands.put("message", message);
+		commands.put("msg", message);
+		commands.put("tell", message);
+		commands.put("whisper", message);
+		commands.put("pm", message);
+		commands.put("ignore", new Ignore());
+		Map<String, VentureCommand> vCommandAliases = new HashMap<String, VentureCommand>();
 		for(String command : commands.keySet()) {
-			plugin.getCommand(command).setExecutor(commandExecutor);
+			if(!disabledCommands.contains(command)) {
+				register(command, commandExecutor);
+				if(!EXCLUDED_COMMANDS.contains(command)) {
+					vCommandAliases.put("v" + command, commands.get(command));
+					register("v" + command, commandExecutor);
+				}
+			}
 		}
-		
-		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-			VentureCommand reply = new Reply();
-			commands.put("reply", reply);
-			commands.put("r", reply);
-			plugin.getCommand("reply").setExecutor(commandExecutor);
-			plugin.getCommand("r").setExecutor(commandExecutor);
-			
-			commands.put("mute", new Mute());
-			commands.put("muteall", new Muteall());
-			commands.put("unmute", new Unmute());
-			commands.put("unmuteall", new Unmuteall());
-			plugin.getCommand("mute").setExecutor(commandExecutor);
-			plugin.getCommand("muteall").setExecutor(commandExecutor);
-			plugin.getCommand("unmute").setExecutor(commandExecutor);
-			plugin.getCommand("unmuteall").setExecutor(commandExecutor);
-			
-			MessageCommandExecutor messageCommandExecutor = new MessageCommandExecutor();
-			plugin.getCommand("message").setExecutor(messageCommandExecutor);
-			plugin.getCommand("msg").setExecutor(messageCommandExecutor);
-			plugin.getCommand("tell").setExecutor(messageCommandExecutor);
-			plugin.getCommand("whisper").setExecutor(messageCommandExecutor);
-			plugin.getCommand("ignore").setExecutor(new IgnoreCommandExecutor());
-		}, 0);
+		commands.putAll(vCommandAliases);
+		Bukkit.getScheduler().runTask(plugin, () -> {
+			for(String command : commands.keySet()) {
+				if(!disabledCommands.contains(command)) {
+					register(command, commandExecutor);
+				}
+			}
+		});
 	}
 }

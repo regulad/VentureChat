@@ -23,7 +23,7 @@ public class VentureChatEvent extends Event {
 	private final String playerPrimaryGroup;
 	private final ChatChannel channel;
 	private final Set<Player> recipients;
-	private final int recipientCount; //For not counting vanished players
+	private int recipientCount; //For not counting vanished players
 	private final String format;
 	private final String chat;
 	private final String globalJSON;
@@ -73,6 +73,10 @@ public class VentureChatEvent extends Event {
 	//Could be lower than the total number of recipients because vanished players are not counted
 	public int getRecipientCount() {
 		return this.recipientCount;
+	}
+	
+	public void setRecipientCount(int recipientCount) {
+		this.recipientCount = recipientCount;
 	}
 	
 	public String getFormat() {
