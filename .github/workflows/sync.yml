@@ -19,9 +19,9 @@ jobs:
           token: '${{ secrets.GITHUB_TOKEN }}'
       - name: Add GitHub remote
         working-directory: BitBucket
-        run: git remote add --mirror=fetch origin https://github.com/regulad/VentureChat.git
+        run: git remote add --mirror=fetch github https://github.com/regulad/VentureChat.git
       - name: Push Changes
         working-directory: BitBucket
         run: |
-          git push origin --all
-          git push origin --tags
+          git push github --all
+          git push github --tags
