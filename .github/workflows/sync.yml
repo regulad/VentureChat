@@ -8,18 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout BitBucket repository
-        run: git clone --bare https://bitbucket.org/Aust1n46/venturechat.git BitBucket
+        run: git clone --bare https://${{ secrets.GITHUB_ACTOR }}:${{ secrets.BITBUCKET }}@bitbucket.org/Aust1n46/venturechat.git BitBucket
       - name: Fetch Tags
         working-directory: BitBucket
         run: git fetch origin --tags
-      - name: Configure Git Credentials
-        uses: oleksiyrudenko/gha-git-credentials@v2-latest
-        with:
-          global: true
-          token: '${{ secrets.GITHUB_TOKEN }}'
       - name: Add GitHub remote
         working-directory: BitBucket
-        run: git remote add --mirror=fetch github https://github.com/regulad/VentureChat.git
+        run: git remote add --mirror=fetch github https:/${{ secrets.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}@/github.com/regulad/VentureChat.git
       - name: Push Changes
         working-directory: BitBucket
         run: |
